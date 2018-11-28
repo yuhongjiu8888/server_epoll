@@ -1,0 +1,4 @@
+# server_epoll
+IO model
+epoll模型是IO复路多用模型并发最好的选择！（解决了单线程的io阻塞模型不支持并发与单线程io非阻塞模型并发空转）
+通过epoll_create、epoll_ctl、epoll_wait三个API函数进行灵活处理。
