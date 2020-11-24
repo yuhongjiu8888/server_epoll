@@ -2,10 +2,11 @@
 #define _SERVER_EPOLL_
 
 #include <iostream>
+#include <cstdio>
+#include <string.h>
 #include <string>
 #include <unistd.h>
 #include <sys/socket.h>
-#include <sys/structs.h>
 #include <sys/epoll.h>
 #include <fcntl.h>
 #include <netinet/in.h>

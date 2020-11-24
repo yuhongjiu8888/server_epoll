@@ -13,8 +13,8 @@ server_epoll::server_epoll(unsigned short port,int maxnum,int timeout){
 }
 
 server_epoll::~server_epoll(){
-	if(NULL!=m_event)
-		delete m_event;
+	if(NULL!= m_epoll)
+		delete m_epoll;
 	if(serverfd)
 		close(serverfd);
 }
@@ -25,7 +25,7 @@ int server_epoll::server_init(){
 	epollfd = epoll_create(_maxnum);
 	if(epollfd < 0){
 		perror("epoll_create error!\n");
-		std::cout<<errno<<:<<strerror(errno)<<std::endl;
+		std::cout<<errno<<":"<<strerror(errno)<<std::endl;
 		return -1;
 	}
 	
@@ -37,20 +37,20 @@ int server_epoll::server_init(){
 	serverfd = socket(AF_INET,SOCK_STREAM,0);
 	if(serverfd == -1){
 		perror("socket create error \n");
-		std::cout<<errno<<:<<strerror(errno)<<std::endl;
+		std::cout<<errno<< ":" <<strerror(errno)<<std::endl;
 		return -1;
 	}
 	std::cout<<"socket create success!["<<serverfd<<"]"<<std::endl;
 
 	if(bind(serverfd,(struct sockaddr*)&serveraddr,sizeof(struct sockaddr_in)) == -1){
 		perror("bind socket error \n");
-		std::cout<<errno<<:<<strerror(errno)<<std::endl;
+		std::cout<<errno<< ":" <<strerror(errno)<<std::endl;
 		return -1;
 	}
 
 	if(listen(serverfd,5) == -1){
 		perror("listen socket error \n");
-		std::cout<<errno<<:<<strerror(errno)<<std::endl;
+		std::cout<<errno<< ":" <<strerror(errno)<<std::endl;
 		return -1;
 	}
 
@@ -62,7 +62,7 @@ int server_epoll::server_init(){
 
 	if(epoll_ctl(epollfd,EPOLL_CTL_ADD,serverfd,&ev) == -1){
 		perror("epoll_ctl error \n");
-		std::cout<<errno<<:<<strerror(errno)<<std::endl;
+		std::cout<<errno<< ":" <<strerror(errno)<<std::endl;
 		return -1;
 	}
 
@@ -87,13 +87,13 @@ void server_epoll::server_start(){
 				memset(&client_addr, 0, sizeof(struct sockaddr_in));
 				socklen_t client_len = sizeof(client_addr);
 				
-				int clientfd = accept(sockfd, (struct sockaddr*)&client_addr, &client_len);
+				int clientfd = accept(serverfd, (struct sockaddr*)&client_addr, &client_len);
 				if (clientfd < 0) {
 					perror("accept");
-					return 4;
+					return ;
 				}
-				std::cout<<"client come from ip<"<<inet_addr(client_addr.sin_addr)<<"> port:"<<ntohs(client_addr.sin_port);
-				std::endl;
+				std::cout<<"client come from ip<"<< inet_ntoa(client_addr.sin_addr)<<"> port:"<<ntohs(client_addr.sin_port)<< std::endl;
+				
 
 				set_noblock(clientfd);
 
@@ -104,8 +104,15 @@ void server_epoll::server_start(){
 				epoll_ctl(epollfd,EPOLL_CTL_ADD,clientfd,&ev);
 			}
 			else{
-						/*recv接受报文*/
-						/*send发送报文*/
+					/*recv接受报文*/
+					char buf[2048];
+					int length = 2048;
+					buf[length] = 0;
+
+					int iRet = read(m_epoll[i].data.fd, buf, length);
+					if (iRet > 0)
+						std::cout << buf << std::endl;
+					/*send发送报文*/
 			}
 		}
 	}
@@ -143,7 +150,7 @@ int server_epoll::nio_write(int fd, char* buf, int len){
 	while(left_len > 0){
 		writed_len = read(fd,buf+write_pos,left_len);
 		if(writed_len < 0){
-			if(error == EAGAIN){
+			if(errno == EAGAIN){
 				continue;
 			}
 			else
